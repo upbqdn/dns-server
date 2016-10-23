@@ -3,11 +3,12 @@
 //
 
 #include "argParser.h"
-#include <iostream>
-#include <stdexcept>
-#include <arpa/inet.h>
 
 ArgParser::ArgParser() {
+
+}
+
+ArgParser::~ArgParser() {
 
 }
 
@@ -37,13 +38,18 @@ void ArgParser::parse(int argc, char **argv){
         }
 
     }
+
+    /*parse the zone files' paths*/
+    while (optind < argc) {
+        m_zoneFile = argv[optind++];
+    }
 }
 
 void ArgParser::processPort(std::string port) {
     char* p;
-    m_port = strtol(port.c_str(),&p, 10);
+    m_port = strtol(port.c_str(), &p, 10);
 
-    if (*p != 0)
+    if (*p != 0 || m_port < 0 || m_port > 65535)
         throw std::invalid_argument("port number is not valid");
 }
 
@@ -61,4 +67,8 @@ void ArgParser::processIP(std::string IP) {
 
 std::string ArgParser::getIP() const {
     return m_ip;
+}
+
+std::string ArgParser::getZoneFile() const {
+    return m_zoneFile;
 }
