@@ -14,6 +14,7 @@ int Server::m_fd;
 
 Server::Server(std::string mitmAddr, uint16_t port) {
 
+    m_buffer.resize(BUFFER_SIZE);
     m_mitmAddr = mitmAddr;
     /*Set the server's properties*/
     memset(&m_serverAddr, 0, sizeof(m_serverAddr));
@@ -23,6 +24,10 @@ Server::Server(std::string mitmAddr, uint16_t port) {
 
 Server::~Server() {
     close(m_fd);
+    delete m_answer;
+    delete m_question;
+    m_answer = NULL;
+    m_question = NULL;
 }
 
 void Server::listen() {
@@ -45,21 +50,24 @@ int Server::serve() {
     struct sockaddr_in clientAddr;
     socklen_t clientAddrlength = sizeof(clientAddr);
     pid_t p;
+    char buffer[BUFFER_SIZE];
 
     /*Receive a message and immediately fork a new child.*/
-    if ((m_ql= recvfrom(m_fd, m_buffer, BUFFER_SIZE, 0,
+    if ((m_ql= recvfrom(m_fd, m_buffer.data(), m_buffer.size(), 0,
                       (struct sockaddr *) &clientAddr,
                       &clientAddrlength)) >= 0) {
-        if ((p = fork()) > 0) {
+
+        /* todo: swap children and parents */
+        if ((p = fork()) == 0) {
             /*parent*/
-        } else if (p == 0) {
+        } else if (p > 0) {
             /*child*/
+            m_buffer.resize(m_ql);
             prepareResponse();
-            if (sendto(m_fd, m_buffer, m_rl, 0,
+            if (sendto(m_fd, m_buffer.data(), m_buffer.size(), 0,
                        (struct sockaddr *) &clientAddr,
                        clientAddrlength) == -1)
                 throw "sendto() failed";
-            sleep(10);
         } else
             throw "fork() failed";
 
@@ -69,6 +77,42 @@ int Server::serve() {
 }
 
 void Server::prepareResponse() {
+    m_answer = new dnsMsg();
+
+    try {
+        m_question = new dnsMsg(m_buffer);
+    } catch (const char * e) {
+        sendErr();
+        return;
+    }
+
+    m_answer->init(*m_question);
+    resolve();
+
+
+    /* todo change the question to answer*/
+    m_buffer = m_question->getBuffer();
+
+}
+
+void Server::resolve() {
+    /*iterate through all the questions*/
+    for (m_question->qIt = m_question->q.begin();
+            m_question->qIt != m_question->q.end();
+            m_question->qIt++) {
+
+        int ttl;
+        std::string data;
+
+        if ((*m_question->qIt)->qtype == "A") {
+            ttl = 3600;
+            data = m_mitmAddr;
+            //m_answer->addAnswer((*m_question->qIt)->qname, "A", ttl, data);
+        }
+    }
+}
+
+void Server::sendErr() {
 
 }
 

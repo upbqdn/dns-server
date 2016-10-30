@@ -3,7 +3,7 @@ project(roughDNS)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
-include_directories( /usr/local/include/ldns )
+#include_directories( /usr/local/include/ldns )
 #add_custom_target(roughDNS COMMAND make -C ${roughDNS_SOURCE_DIR}
                            #CLION_EXE_DIR=${PROJECT_BINARY_DIR})
 set(SOURCE_FILES src/main.cpp src/main.h
@@ -13,7 +13,5 @@ set(SOURCE_FILES src/main.cpp src/main.h
 #        src/*.cpp
 #        src/*.h)
 
-#include_directories( src/ldns )
 add_executable(roughDNS ${SOURCE_FILES})
-#TARGET_LINK_LIBRARIES(roughDNS src/ldns)
 target_link_libraries( roughDNS  /usr/local/lib/libldns.so )

@@ -28,12 +28,14 @@ private:
     struct sockaddr_in m_serverAddr;
     std::string m_mitmAddr;
     const static uint BUFFER_SIZE = 512;
-    char m_buffer[BUFFER_SIZE];
-    dnsMsg m_question;
-    dnsMsg m_answer;
+    std::vector<char> m_buffer;
+    dnsMsg* m_question = NULL;
+    dnsMsg* m_answer = NULL;
 
     int serve();
     void prepareResponse();
+    void resolve();
+    void sendErr();
 
 public:
     Server(std::string ip = "", uint16_t port = 53);

@@ -7,6 +7,9 @@
 
 #include <ios>
 #include <vector>
+#include <cstring>
+#include <iostream>
+#include <netinet/in.h>
 
 class dnsMsg {
 private:
@@ -29,29 +32,54 @@ private:
 
     struct question {
         std::string qname;
-        uint16_t qtype;
-        uint16_t qclass;
+        std::string qtype;
+        std::string qclass;
     };
 
     struct rr {
         std::string name;
-        uint16_t type;
-        uint16_t rclass;
-        uint32_t ttl;
-        uint16_t rdlength;
+        std::string type;
+        std::string rclass;
+        int ttl;
         std::string rdata;
     };
 
+    void parseBuffer();
+    std::string parseDomainName(uint16_t &i);
+    std::string ttos(uint16_t type);
+    std::string ctos(uint16_t rclass);
+
 public:
+    const static int A = 1;
+    const static int SOA = 6;
+    const static int MX = 15;
+    const static int NS = 2;
+    const static int AAAA = 28;
+    const static int CNAME = 5;
+    const static int PTR = 12;
+    const static int TXT = 16;
+
+    const static int IN = 1;
+
     struct header h;
-    std::vector<struct question> question;
-    std::vector<struct rr> answer;
-    std::vector<struct rr> authority;
-    std::vector<struct rr> additional;
-    char* buffer;
+    std::vector<struct question *> q;
+    std::vector<struct question *>::iterator qIt;
+    std::vector<struct rr *> ans;
+    std::vector<struct rr *>::iterator ansIt;
+    std::vector<struct rr *> auth;
+    std::vector<struct rr *>::iterator authIt;
+    std::vector<struct rr *> add;
+    std::vector<struct rr *>::iterator addIt;
+    std::vector<char> m_buffer;
 
     dnsMsg();
+    dnsMsg(std::vector<char> buffer);
     ~dnsMsg();
+
+    void init(dnsMsg question);
+    std::vector<char> getBuffer();
+    void addAnswer(std::string name, std::string rclass, int ttl,
+                   std::string data);
 };
 
 #endif //ROUGHDNS_DNSMSG_H

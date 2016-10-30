@@ -42,7 +42,6 @@ int main(int argc, char** argv)
     fp = fopen(argParser->getZoneFile().c_str(), "r");
     if (fp)
         s = ldns_zone_new_frm_fp_l(&z, fp, NULL, 0, LDNS_RR_CLASS_IN, &line_nr);
-
     /*********************************************************************/
 
     server = new Server(argParser->getIP(), argParser->getPort());
@@ -64,14 +63,10 @@ int main(int argc, char** argv)
 }
 
 void destroy() {
-    if(argParser) {
-        delete argParser;
-        argParser = NULL;
-    }
-    if(server) {
-        delete server;
-        server = NULL;
-    }
+    delete argParser;
+    argParser = NULL;
+    delete server;
+    server = NULL;
 }
 
 void sigIntHandler(int s) {
