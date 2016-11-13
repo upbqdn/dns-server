@@ -15,7 +15,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
-
+#include <csignal>
+#include <iostream>
+#include <resolv.h>
+#include <netdb.h>
+#include <ldns/ldns.h>
+#include "rr.h"
 #include "dnsMsg.h"
 
 class Server {
@@ -28,6 +33,7 @@ private:
     struct sockaddr_in m_serverAddr;
     std::string m_mitmAddr;
     const static uint BUFFER_SIZE = 512;
+    const static uint32_t TTL = 3600;
     std::vector<char> m_buffer;
     dnsMsg* m_question = NULL;
     dnsMsg* m_answer = NULL;

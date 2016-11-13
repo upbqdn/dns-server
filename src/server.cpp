@@ -2,9 +2,6 @@
 // Created by marek on 10/15/16.
 //
 
-#include <csignal>
-#include <iostream>
-#include <cstdlib>
 #include "server.h"
 
 #pragma clang diagnostic push
@@ -45,7 +42,6 @@ void Server::listen() {
     while(serve());
 }
 
-
 int Server::serve() {
     struct sockaddr_in clientAddr;
     socklen_t clientAddrlength = sizeof(clientAddr);
@@ -58,9 +54,9 @@ int Server::serve() {
                       &clientAddrlength)) >= 0) {
 
         /* todo: swap children and parents */
-        if ((p = fork()) == 0) {
+        if ((p = fork()) > 0) {
             /*parent*/
-        } else if (p > 0) {
+        } else if (p == 0) {
             /*child*/
             m_buffer.resize(m_ql);
             prepareResponse();
@@ -88,28 +84,44 @@ void Server::prepareResponse() {
 
     m_answer->init(*m_question);
     resolve();
-
-
-    /* todo change the question to answer*/
-    m_buffer = m_question->getBuffer();
-
+    m_buffer = m_answer->getBuffer();
 }
 
 void Server::resolve() {
-    /*iterate through all the questions*/
-    for (m_question->qIt = m_question->q.begin();
-            m_question->qIt != m_question->q.end();
-            m_question->qIt++) {
+    uint ttl;
+    std::string data;
+    bool aa;
+    uint8_t rcode;
+    const question q = *m_question->q[0];
+    ldns_resolver *res;
+    ldns_rdf *d;
+    ldns_pkt *p;
+    ldns_rr_list *rrs;
+    ldns_status s;
 
-        int ttl;
-        std::string data;
+    d = ldns_dname_new_frm_str(q.qname.c_str());
+    s = ldns_resolver_new_frm_file(&res, NULL);
 
-        if ((*m_question->qIt)->qtype == "A") {
-            ttl = 3600;
-            data = m_mitmAddr;
-            //m_answer->addAnswer((*m_question->qIt)->qname, "A", ttl, data);
+    if (q.qtype == "A") {
+        if (!m_mitmAddr.empty()) {
+            rr * r = new rr(q.qname, "A", TTL, m_mitmAddr);
+            m_answer->ans.push_back(r);
+            m_answer->setAA(true);
+            m_answer->setRcode(dnsMsg::OK);
+        } else {
+            p = ldns_resolver_query(res, d, LDNS_RR_TYPE_A,
+                                    LDNS_RR_CLASS_IN, LDNS_RD);
+            rrs = ldns_pkt_answer(p);
+
+            m_answer->ans = rr::parseLdns(rrs);
+
+            //std::cout << "hel" << std::endl;
+            //ldns_rr_list_free(rrs);
+            //ldns_pkt_free(p);
+            //ldns_resolver_deep_free(res);
         }
     }
+
 }
 
 void Server::sendErr() {

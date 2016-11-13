@@ -10,76 +10,105 @@
 #include <cstring>
 #include <iostream>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include "rr.h"
+
+struct header {
+    /*https://tools.ietf.org/html/rfc1035*/
+    uint16_t id;
+    uint8_t qr : 1;
+    uint8_t opcode : 4;
+    uint8_t aa : 1;
+    uint8_t tc : 1;
+    uint8_t rd : 1;
+    uint8_t ra : 1;
+    uint8_t z : 3;
+    uint8_t rcode : 4;
+    uint16_t qdcount;
+    uint16_t ancount;
+    uint16_t nscount;
+    uint16_t arcount;
+};
+
+struct question {
+    std::string qname;
+    std::string qtype;
+    std::string qclass;
+};
 
 class dnsMsg {
 private:
-    struct header {
-        /*https://tools.ietf.org/html/rfc1035*/
-        uint16_t id;
-        char qr : 1;
-        char opcode : 4;
-        char aa : 1;
-        char tc : 1;
-        char rd : 1;
-        char ra : 1;
-        char z : 3;
-        char rcode : 4;
-        uint16_t qdcount;
-        uint16_t ancount;
-        uint16_t nscount;
-        uint16_t arcount;
-    };
-
-    struct question {
-        std::string qname;
-        std::string qtype;
-        std::string qclass;
-    };
-
-    struct rr {
+    struct pointer {
         std::string name;
-        std::string type;
-        std::string rclass;
-        int ttl;
-        std::string rdata;
+        uint16_t i;
     };
+
+    const static uint8_t QUERY = 0;
+    const static uint8_t RESPONSE = 1;
+    const static uint8_t IQUERY = 1;
+
+    const static int BUFFER_SIZE = 512;
+
+    std::vector<char> m_buffer;
+    std::vector<char> m_obuffer;
+    std::vector<pointer *> pointers;
 
     void parseBuffer();
-    std::string parseDomainName(uint16_t &i);
-    std::string ttos(uint16_t type);
-    std::string ctos(uint16_t rclass);
+    const std::string parseDomainName(uint16_t &i);
+    void insertDomainName(uint16_t &i, std::string name);
+    void insertQuestion(uint16_t &i, const question * q);
+    void insertRR(uint16_t &i, const rr & r, const bool print);
+    void loadOutBuffer();
 
 public:
-    const static int A = 1;
-    const static int SOA = 6;
-    const static int MX = 15;
-    const static int NS = 2;
-    const static int AAAA = 28;
-    const static int CNAME = 5;
-    const static int PTR = 12;
-    const static int TXT = 16;
+    const static uint16_t A = 1;
+    const static uint16_t SOA = 6;
+    const static uint16_t MX = 15;
+    const static uint16_t NS = 2;
+    const static uint16_t AAAA = 28;
+    const static uint16_t CNAME = 5;
+    const static uint16_t PTR = 12;
+    const static uint16_t TXT = 16;
 
-    const static int IN = 1;
+    const static uint16_t IN = 1;
+
+    const static uint8_t OK = 0;
+
+    enum section {ANS, AUTH, ADD};
 
     struct header h;
     std::vector<struct question *> q;
     std::vector<struct question *>::iterator qIt;
-    std::vector<struct rr *> ans;
-    std::vector<struct rr *>::iterator ansIt;
-    std::vector<struct rr *> auth;
-    std::vector<struct rr *>::iterator authIt;
-    std::vector<struct rr *> add;
-    std::vector<struct rr *>::iterator addIt;
-    std::vector<char> m_buffer;
+    std::vector<rr *> ans;
+    std::vector<rr *>::iterator ansIt;
+    std::vector<rr *> auth;
+    std::vector<rr *>::iterator authIt;
+    std::vector<rr *> add;
+    std::vector<rr *>::iterator addIt;
 
     dnsMsg();
     dnsMsg(std::vector<char> buffer);
     ~dnsMsg();
 
-    void init(dnsMsg question);
+    void init(const dnsMsg & question);
     std::vector<char> getBuffer();
-    void addAnswer(std::string name, std::string rclass, int ttl,
-                   std::string data);
+    void setAA(bool aa);
+    void setRcode(uint8_t c);
+
+    /*
+    void addRR(section s, std::string name, std::string type,
+               uint32_t ttl, std::string data);
+    void addRR(section s, std::string name, std::string type,
+               uint32_t ttl, std::string data, bool aa, uint8_t rcode);
+    void addRR(std::string name, std::string type, uint32_t ttl,
+               std::string data);
+    void addRR(std::string name, std::string type, uint32_t ttl,
+               std::string data, bool aa, uint8_t rcode);
+*/
+    static const std::string ttos(uint16_t type);
+    static const std::string ctos(uint16_t rclass);
+    static uint16_t stot(std::string type);
+    static uint16_t stoc(std::string rclass);
 };
 
 #endif //ROUGHDNS_DNSMSG_H
