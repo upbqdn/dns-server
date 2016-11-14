@@ -16,9 +16,12 @@ dnsMsg::dnsMsg(std::vector<char> buffer) {
 }
 
 dnsMsg::~dnsMsg() {
+    for(pIt = p.begin(); pIt < p.end(); pIt++) {
+        delete *pIt;
+    }
+
     for (qIt = q.begin(); qIt != q.end(); qIt++) {
-        /*todo find out why there's a double free*/
-        //delete *qIt;
+        delete *qIt;
     }
 
     for (ansIt = ans.begin(); ansIt != ans.end(); ansIt++) {
@@ -75,13 +78,11 @@ void dnsMsg::loadOutBuffer() {
     tmp16b = htons(h.arcount);
     memcpy(&m_obuffer[i], &tmp16b, 2); i+=2;
 
-
     /*QUESTION SECTION*/
     insertQuestion(i, q[0]);
 
-    for (ansIt = ans.begin(); ansIt != ans.end(); ansIt++) {
+    for (ansIt = ans.begin(); ansIt != ans.end(); ansIt++)
         insertRR(i, **ansIt, true);
-    }
 
     m_obuffer.resize(i);
 }
@@ -114,13 +115,9 @@ void dnsMsg::insertRR(uint16_t &i, const rr &r, const bool print) {
     tmp32 = htonl(r.getTtl());
     memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
 
+        /*TYPE A*/
     if (r.getType() == "A") {
-        if (print) {
-            std::cout << "r: " << r.getName()
-                      << ": type " << r.getType()
-                      << ", class " << r.getRclass()
-                      << ", addr " << r.getData() << std::endl;
-        }
+        if (print) stdOutPrint(A, r);
 
         tmp16 = htons(4);
         memcpy(&m_obuffer[i], &tmp16, 2); i+=2;
@@ -130,80 +127,154 @@ void dnsMsg::insertRR(uint16_t &i, const rr &r, const bool print) {
         tmp32 = sa.sin_addr.s_addr;
         memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
     }
+        /*TYPE AAAA*/
+    else if (r.getType() == "AAAA") {
+        if (print) stdOutPrint(AAAA, r);
+        tmp16 = htons(16);
+        memcpy(&m_obuffer[i], &tmp16, 2); i+=2;
 
+        struct sockaddr_in6 sa;
+        inet_pton(AF_INET6, r.getData().c_str(), &(sa.sin6_addr));
+        memcpy(&m_obuffer[i], &(sa.sin6_addr.__in6_u), 16); i+=16;
+    }
+        /*TYPE CNAME*/
+    else if (r.getType() == "CNAME") {
+        if (print) stdOutPrint(CNAME, r);
+        uint16_t sizePos = i;
+        i+=2;
+        tmp16 = htons(insertDomainName(i, r.getData()));
+        memcpy(&m_obuffer[sizePos], &tmp16, 2);
+    }
+        /*TYPE NS*/
+    else if (r.getType() == "NS") {
+        if (print) stdOutPrint(NS, r);
+        uint16_t sizePos = i;
+        i+=2;
+        tmp16 = htons(insertDomainName(i, r.getData()));
+        memcpy(&m_obuffer[sizePos], &tmp16, 2);
+    }
+        /*TYPE PTR*/
+    else if (r.getType() == "PTR") {
+        if (print) stdOutPrint(PTR, r);
+        uint16_t sizePos = i;
+        i+=2;
+        tmp16 = htons(insertDomainName(i, r.getData()));
+        memcpy(&m_obuffer[sizePos], &tmp16, 2);
+    }
 }
 
-/*todo: add pointers*/
-void dnsMsg::insertDomainName(uint16_t &i, std::string name) {
+void dnsMsg::stdOutPrint(uint16_t type, rr r) {
+    switch (type) {
+        case A:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << ", addr " << r.getData() << std::endl;
+            break;
+        case CNAME:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << ", cname " << r.getData() << std::endl;
+            break;
+        case NS:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << ", ns " << r.getData() << std::endl;
+            break;
+        case PTR:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << r.getData() << std::endl;
+            break;
+        case SOA:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << ", mname " << r.getMname() << std::endl;
+            break;
+        case MX:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << ", preference " << r.getPreference()
+                      << ", mx " << r.getData() << std::endl;
+           break;
+        case TXT:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << ", txt \"" << r.getData() << "\"" << std::endl;
+            break;
+        case AAAA:
+            std::cout << "r: " << r.getName()
+                      << ": type " << r.getType()
+                      << ", class " << r.getRclass()
+                      << ", addr " << r.getData() << std::endl;
+           break;
+    }
+}
+
+/*returns the number of written bytes*/
+uint16_t dnsMsg::insertDomainName(uint16_t &i, std::string name) {
+    uint16_t iBefore = i;
     std::string d = ".";
-    std::string tmp = name;
-    size_t ind = 0;
-    uint8_t l;
+    uint16_t p;
+
+    /*if we're at the end of the name, write the terminating zero byte*/
+    if(name.empty()) {
+        uint8_t l = 0;
+        memcpy(&m_obuffer[i], &l, 1); i+=1;
+        return 1;
+    }
 
     /*check the last dot in the domain name*/
-    if (!tmp.empty())
-        if (tmp.back() != '.')
-            tmp += '.';
+    if (name.back() != '.')
+        name += '.';
 
-    /*through the whole domain name*/
-    while((ind = tmp.find(d)) != std::string::npos) {
-        std::string label = tmp.substr(0, ind);
+    if(p = getPointer(name)) {
+        /*we've got a pointer, write it to the buffer*/
+        p |= 0b1100000000000000;
+        p = htons(p);
+        memcpy(&m_obuffer[i], &p, 2); i+=2;
+        /*the pointer takes two bytes in the buffer*/
+        return 2;
+    } else {
+        /*let's write the first part of the name*/
+        addPointer(name, i);
+        std::string chunk = name.substr(0, name.find(d));
 
-        /*insert the length of the label*/
-        l = label.length();
+        /*write the length of the chunk*/
+        uint8_t l = chunk.length();
         memcpy(&m_obuffer[i], &l, 1); i+=1;
 
-        /*insert the label itself*/
-        for(char & c : label) {
+        /*write chunk itself*/
+        for (char & c : chunk) {
             memcpy(&m_obuffer[i], &c, 1); i += 1;
         }
 
-        tmp.erase(0, ind + d.length());
-    }
-
-    /*the terminating zero length byte*/
-    l = 0;
-    memcpy(&m_obuffer[i], &l, 1); i+=1;
-}
-
-/*
-void dnsMsg::addRR(section s, std::string name, std::string type,
-                   uint32_t ttl, std::string data) {
-    rr *r = new rr(name, type, "IN", ttl, data);
-
-    switch (s) {
-        case ANS:
-            h.ancount++;
-            ans.push_back(r);
-            break;
-        case AUTH:
-            h.nscount++;
-            auth.push_back(r);
-            break;
-        case ADD:
-            h.arcount++;
-            add.push_back(r);
-            break;
+        std::string tail = name.erase(0, name.find(d) + d.length());
+        return l + 1 + insertDomainName(i, tail);
     }
 }
 
-void dnsMsg::addRR(std::string name, std::string type, uint32_t ttl,
-                   std::string data) {
-    addRR(ANS, name, type, ttl, data);
+uint16_t dnsMsg::getPointer(std::string name) {
+    for (pIt = p.begin(); pIt < p.end(); pIt++){
+        if((*pIt)->name == name)
+            return (*pIt)->i;
+        else
+            return 0;
+    }
 }
 
-void dnsMsg::addRR(section s, std::string name, std::string type,
-                   uint32_t ttl, std::string data, bool aa, uint8_t rcode) {
-    addRR(s, name, type, ttl, data);
-    h.aa = aa;
-    h.rcode = rcode;
+void dnsMsg::addPointer(std::string name, uint16_t i) {
+    struct pointer * point = new struct pointer;
+    point->i = i;
+    point->name = name;
+    p.push_back(point);
 }
-
-void dnsMsg::addRR(std::string name, std::string type, uint32_t ttl,
-                   std::string data, bool aa, uint8_t rcode) {
-    addRR(ANS, name, type, ttl, data, aa, rcode);
-}
-*/
 
 void dnsMsg::setAA(bool aa) {
     h.aa = aa;
@@ -324,7 +395,7 @@ const std::string dnsMsg::parseDomainName(uint16_t &i) {
     return name;
 }
 
-void dnsMsg::init(const dnsMsg & question) {
+void dnsMsg::init(dnsMsg & question) {
     h.id = question.h.id;
     h.qr = 1;
     h.opcode = question.h.opcode;
@@ -337,7 +408,11 @@ void dnsMsg::init(const dnsMsg & question) {
     h.nscount = 0;
     h.arcount = 0;
 
-    q = question.q;
+    for (qIt = question.q.begin(); qIt < question.q.end(); qIt++) {
+        struct question * quest = new struct question;
+        *quest = **qIt;
+        q.push_back(quest);
+    }
 }
 
 /*type to string*/

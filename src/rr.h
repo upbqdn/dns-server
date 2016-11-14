@@ -23,6 +23,7 @@ private:
     uint32_t retry;
     uint32_t expire;
     uint32_t minimum;
+    uint16_t preference;
 
     static std::string ttos(ldns_rr_type t);
 
@@ -50,6 +51,8 @@ public:
     uint32_t getExpire() const;
 
     uint32_t getMinimum() const;
+
+    uint16_t getPreference() const;
 
     static std::vector<rr *> parseLdns(ldns_rr_list *ldnsRrs);
 

@@ -41,6 +41,7 @@ private:
     int serve();
     void prepareResponse();
     void resolve();
+    void remoteResolve(question q, ldns_rr_type t);
     void sendErr();
 
 public:

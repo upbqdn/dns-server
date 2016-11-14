@@ -88,20 +88,8 @@ void Server::prepareResponse() {
 }
 
 void Server::resolve() {
-    uint ttl;
-    std::string data;
-    bool aa;
-    uint8_t rcode;
     const question q = *m_question->q[0];
-    ldns_resolver *res;
-    ldns_rdf *d;
-    ldns_pkt *p;
-    ldns_rr_list *rrs;
-    ldns_status s;
-
-    d = ldns_dname_new_frm_str(q.qname.c_str());
-    s = ldns_resolver_new_frm_file(&res, NULL);
-
+    /*TYPE A*/
     if (q.qtype == "A") {
         if (!m_mitmAddr.empty()) {
             rr * r = new rr(q.qname, "A", TTL, m_mitmAddr);
@@ -109,19 +97,46 @@ void Server::resolve() {
             m_answer->setAA(true);
             m_answer->setRcode(dnsMsg::OK);
         } else {
-            p = ldns_resolver_query(res, d, LDNS_RR_TYPE_A,
-                                    LDNS_RR_CLASS_IN, LDNS_RD);
-            rrs = ldns_pkt_answer(p);
-
-            m_answer->ans = rr::parseLdns(rrs);
-
-            //std::cout << "hel" << std::endl;
-            //ldns_rr_list_free(rrs);
-            //ldns_pkt_free(p);
-            //ldns_resolver_deep_free(res);
+            remoteResolve(q, LDNS_RR_TYPE_A);
         }
     }
+        /*TYPE AAAA*/
+    else if (q.qtype == "AAAA") {
+        remoteResolve(q, LDNS_RR_TYPE_AAAA);
+    }
+        /*TYPE CNAME*/
+    else if (q.qtype == "CNAME") {
+        remoteResolve(q, LDNS_RR_TYPE_CNAME);
+    }
+        /*TYPE NS*/
+    else if (q.qtype == "NS") {
+        remoteResolve(q, LDNS_RR_TYPE_NS);
+    }
+        /*TYPE PTR*/
+    else if (q.qtype == "PTR") {
+        remoteResolve(q, LDNS_RR_TYPE_PTR);
+    }
+}
 
+void Server::remoteResolve(question q, ldns_rr_type t) {
+    ldns_resolver *res;
+    ldns_rdf *d;
+    ldns_pkt *p;
+    ldns_rr_list *rrs;
+
+    d = ldns_dname_new_frm_str(q.qname.c_str());
+    ldns_resolver_new_frm_file(&res, NULL);
+
+    p = ldns_resolver_query(res, d, t, LDNS_RR_CLASS_IN, LDNS_RD);
+    rrs = ldns_pkt_answer(p);
+
+    m_answer->ans = rr::parseLdns(rrs);
+    m_answer->setAA(false);
+    m_answer->setRcode(p->_header->_rcode);
+
+    ldns_rdf_deep_free(d);
+    ldns_pkt_free(p);
+    ldns_resolver_deep_free(res);
 }
 
 void Server::sendErr() {

@@ -55,10 +55,13 @@ private:
 
     void parseBuffer();
     const std::string parseDomainName(uint16_t &i);
-    void insertDomainName(uint16_t &i, std::string name);
+    uint16_t insertDomainName(uint16_t &i, std::string name);
     void insertQuestion(uint16_t &i, const question * q);
     void insertRR(uint16_t &i, const rr & r, const bool print);
+    void stdOutPrint(uint16_t type, rr r);
     void loadOutBuffer();
+    uint16_t getPointer(std::string name);
+    void addPointer(std::string name, uint16_t i);
 
 public:
     const static uint16_t A = 1;
@@ -77,6 +80,8 @@ public:
     enum section {ANS, AUTH, ADD};
 
     struct header h;
+    std::vector<struct pointer *> p;
+    std::vector<struct pointer *>::iterator pIt;
     std::vector<struct question *> q;
     std::vector<struct question *>::iterator qIt;
     std::vector<rr *> ans;
@@ -90,21 +95,11 @@ public:
     dnsMsg(std::vector<char> buffer);
     ~dnsMsg();
 
-    void init(const dnsMsg & question);
+    void init(dnsMsg & question);
     std::vector<char> getBuffer();
     void setAA(bool aa);
     void setRcode(uint8_t c);
 
-    /*
-    void addRR(section s, std::string name, std::string type,
-               uint32_t ttl, std::string data);
-    void addRR(section s, std::string name, std::string type,
-               uint32_t ttl, std::string data, bool aa, uint8_t rcode);
-    void addRR(std::string name, std::string type, uint32_t ttl,
-               std::string data);
-    void addRR(std::string name, std::string type, uint32_t ttl,
-               std::string data, bool aa, uint8_t rcode);
-*/
     static const std::string ttos(uint16_t type);
     static const std::string ctos(uint16_t rclass);
     static uint16_t stot(std::string type);
