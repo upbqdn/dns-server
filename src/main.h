@@ -12,7 +12,7 @@
 #include "server.h"
 #include <ldns/ldns.h>
 
-const std::string helpMsg = "help yourself";
+const std::string helpMsg = "A recursive, concurrent DNS server";
 void destroy();
 void sigIntHandler(int s);
 #endif //ROUGHDNS_MAIN_H

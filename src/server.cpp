@@ -53,7 +53,7 @@ int Server::serve() {
                       (struct sockaddr *) &clientAddr,
                       &clientAddrlength)) >= 0) {
 
-        /* todo: swap children and parents */
+        /* todo: swap the children and parents */
         if ((p = fork()) > 0) {
             /*parent*/
         } else if (p == 0) {
@@ -98,7 +98,8 @@ void Server::resolve() {
             m_answer->setAA(true);
             m_answer->setRcode(dnsMsg::OK);
         } else {
-            remoteResolve(q, LDNS_RR_TYPE_A);
+            if (!localResolve(q))
+                remoteResolve(q, LDNS_RR_TYPE_A);
         }
     }
         /*TYPE MX*/
@@ -110,42 +111,93 @@ void Server::resolve() {
             m_answer->setAA(true);
             m_answer->setRcode(dnsMsg::OK);
         } else {
-
-            remoteResolve(q, LDNS_RR_TYPE_MX);
+            if(!localResolve(q))
+                remoteResolve(q, LDNS_RR_TYPE_MX);
         }
     }
         /*TYPE SOA*/
     else if (q.qtype == "SOA") {
-        if (isAuthoritative(q))
-            localResolve(q);
-        else
+        if(!localResolve(q))
             remoteResolve(q, LDNS_RR_TYPE_SOA);
     }
         /*TYPE AAAA*/
     else if (q.qtype == "AAAA") {
-        remoteResolve(q, LDNS_RR_TYPE_AAAA);
+        if(!localResolve(q))
+            remoteResolve(q, LDNS_RR_TYPE_AAAA);
     }
         /*TYPE CNAME*/
     else if (q.qtype == "CNAME") {
-        remoteResolve(q, LDNS_RR_TYPE_CNAME);
+        if(!localResolve(q))
+            remoteResolve(q, LDNS_RR_TYPE_CNAME);
     }
         /*TYPE NS*/
     else if (q.qtype == "NS") {
-        remoteResolve(q, LDNS_RR_TYPE_NS);
+        if(!localResolve(q))
+            remoteResolve(q, LDNS_RR_TYPE_NS);
     }
         /*TYPE PTR*/
     else if (q.qtype == "PTR") {
-        remoteResolve(q, LDNS_RR_TYPE_PTR);
+        if(!localResolve(q))
+            remoteResolve(q, LDNS_RR_TYPE_PTR);
     }
 }
 
-bool Server::isAuthoritative(question q) {
-
+void Server::includeCNAME(std::string type, std::string alias){
+    for (std::vector<rr *>::iterator i = zone.begin(); i < zone.end(); i++) {
+        /*if we found a cname for the alias*/
+        if ((*i)->getName() == alias) {
+            /*and even if the type is the same, add the cname to the answer*/
+            if ((*i)->getType() == type) {
+                rr *r = new rr;
+                *r = **i;
+                m_answer->ans.push_back(r);
+            }
+                /*otherwise look for another cname*/
+            else if ((*i)->getType() == "CNAME") {
+                rr *r = new rr;
+                *r = **i;
+                m_answer->ans.push_back(r);
+                includeCNAME(type, (*i)->getData());
+            }
+        }
+    }
 }
 
-void Server::localResolve(question q) {
+bool Server::localResolve(question q) {
+    bool found = false;
+    std::string name = q.qname;
 
-    m_answer->setAA(true);
+    if (name.back() != '.')
+        name += '.';
+
+    for (std::vector<rr *>::iterator i = zone.begin(); i < zone.end(); i++) {
+        /*if we found a record with the same LHS*/
+        if ((*i)->getName() == name) {
+            found = true;
+            /*and even if the types are the same, add the record to the answer*/
+            if ((*i)->getType() == q.qtype) {
+                rr *r = new rr;
+                *r = **i;
+                m_answer->ans.push_back(r);
+            }
+            /*otherwise add cnames for the alias*/
+            else if ((*i)->getType() == "CNAME") {
+                rr *r = new rr;
+                *r = **i;
+                m_answer->ans.push_back(r);
+                includeCNAME(q.qtype, (*i)->getData());
+            }
+        }
+    }
+
+    if(found) {
+        m_answer->setAA(true);
+        m_answer->setRcode(dnsMsg::OK);
+    } else {
+        m_answer->setRcode(dnsMsg::NAME_ERR);
+    }
+
+    return found;
 }
 
 void Server::remoteResolve(question q, ldns_rr_type t) {

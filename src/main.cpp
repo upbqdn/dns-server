@@ -18,7 +18,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     } catch (const std::domain_error &e) {
         destroy();
-        std::cout << helpMsg;
+        std::cout << helpMsg << std::endl;
         return EXIT_SUCCESS;
     }
 

@@ -413,8 +413,6 @@ void dnsMsg::parseBuffer() {
 
         q.push_back(qp);
     }
-
-    /*todo: finish the rest of the packet*/
 }
 
 const std::string dnsMsg::parseDomainName(uint16_t &i) {

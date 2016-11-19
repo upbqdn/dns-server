@@ -55,11 +55,14 @@ void ArgParser::parse(int argc, char **argv){
 
         if (LDNS_STATUS_OK != ldns_zone_new_frm_fp_l(&z, fp, NULL, 0,
                                                               LDNS_RR_CLASS_IN,
-                                                              &line_nr))
+                                                              &line_nr)) {
+            fclose(fp);
             throw std::invalid_argument("could not parse the zone file");
+        }
 
         std::vector<rr *> tmp = rr::parseLdnsZoneFile(z);
         m_zoneFile.insert(m_zoneFile.end(), tmp.begin(), tmp.end());
+        fclose(fp);
         ldns_zone_deep_free(z);
     }
 }

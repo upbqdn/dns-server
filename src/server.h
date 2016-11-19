@@ -42,8 +42,8 @@ private:
     void prepareResponse();
     void resolve();
     void remoteResolve(question q, ldns_rr_type t);
-    bool isAuthoritative(question q);
-    void localResolve(question q);
+    void includeCNAME(std::string type, std::string alias);
+    bool localResolve(question q);
     void sendErr();
 
 public:
