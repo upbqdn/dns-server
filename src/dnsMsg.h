@@ -47,7 +47,8 @@ private:
     const static uint8_t RESPONSE = 1;
     const static uint8_t IQUERY = 1;
 
-    const static int BUFFER_SIZE = 512;
+    const static int BUFFER_INIT_SIZE = 10000;
+    const static int BUFFER_MAX_SIZE = 512;
 
     std::vector<char> m_buffer;
     std::vector<char> m_obuffer;
@@ -76,6 +77,8 @@ public:
     const static uint16_t IN = 1;
 
     const static uint8_t OK = 0;
+    const static uint8_t FORMAT_ERR = 1;
+    const static uint8_t NAME_ERR = 3;
 
     enum section {ANS, AUTH, ADD};
 

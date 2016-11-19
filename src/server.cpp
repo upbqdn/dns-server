@@ -82,12 +82,12 @@ void Server::prepareResponse() {
         return;
     }
 
-    m_answer->init(*m_question);
     resolve();
     m_buffer = m_answer->getBuffer();
 }
 
 void Server::resolve() {
+    m_answer->init(*m_question);
     const question q = *m_question->q[0];
 
     /*TYPE A*/
@@ -145,6 +145,7 @@ bool Server::isAuthoritative(question q) {
 
 void Server::localResolve(question q) {
 
+    m_answer->setAA(true);
 }
 
 void Server::remoteResolve(question q, ldns_rr_type t) {
@@ -178,7 +179,8 @@ void Server::remoteResolve(question q, ldns_rr_type t) {
 }
 
 void Server::sendErr() {
-
+    m_answer->init(*m_question);
+    m_answer->setRcode(dnsMsg::FORMAT_ERR);
 }
 
 #pragma clang diagnostic pop

@@ -5,7 +5,7 @@
 #include "dnsMsg.h"
 
 dnsMsg::dnsMsg() {
-    m_obuffer.resize(BUFFER_SIZE);
+    m_obuffer.resize(BUFFER_INIT_SIZE);
 }
 
 dnsMsg::dnsMsg(std::vector<char> buffer) {
@@ -41,7 +41,7 @@ std::vector<char> dnsMsg::getBuffer() {
     h.ancount = ans.size();
     h.nscount = auth.size();
     h.arcount = add.size();
-    m_obuffer.resize(BUFFER_SIZE);
+    //m_obuffer.resize(BUFFER_INIT_SIZE);
     loadOutBuffer();
     return m_obuffer;
 }
@@ -81,16 +81,25 @@ void dnsMsg::loadOutBuffer() {
     /*QUESTION SECTION*/
     insertQuestion(i, q[0]);
 
+    /*ANSWER SECTION*/
     for (ansIt = ans.begin(); ansIt != ans.end(); ansIt++)
         insertRR(i, **ansIt, true);
 
+    /*AUTHORITY SECTION*/
     for (authIt = auth.begin(); authIt != auth.end(); authIt++)
         insertRR(i, **authIt, false);
 
+    /*ADDITIONAL SECTION*/
     for (addIt = add.begin(); addIt != add.begin(); addIt++)
         insertRR(i, **addIt, false);
 
-    m_obuffer.resize(i);
+    /*check the truncation*/
+    if(i > BUFFER_MAX_SIZE) {
+        m_obuffer.resize(BUFFER_MAX_SIZE);
+        h.tc = true;
+    } else {
+        m_obuffer.resize(i);
+    }
 }
 
 void dnsMsg::insertQuestion(uint16_t &i, const question * q) {
