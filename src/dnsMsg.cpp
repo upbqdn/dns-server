@@ -84,6 +84,12 @@ void dnsMsg::loadOutBuffer() {
     for (ansIt = ans.begin(); ansIt != ans.end(); ansIt++)
         insertRR(i, **ansIt, true);
 
+    for (authIt = auth.begin(); authIt != auth.end(); authIt++)
+        insertRR(i, **authIt, false);
+
+    for (addIt = add.begin(); addIt != add.begin(); addIt++)
+        insertRR(i, **addIt, false);
+
     m_obuffer.resize(i);
 }
 

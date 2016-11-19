@@ -157,11 +157,20 @@ void Server::remoteResolve(question q, ldns_rr_type t) {
     ldns_resolver_new_frm_file(&res, NULL);
 
     p = ldns_resolver_query(res, d, t, LDNS_RR_CLASS_IN, LDNS_RD);
-    rrs = ldns_pkt_answer(p);
 
+    /*fill the answer section*/
+    rrs = ldns_pkt_answer(p);
     m_answer->ans = rr::parseLdnsRrList(rrs);
     m_answer->setAA(false);
     m_answer->setRcode(p->_header->_rcode);
+
+    /*fill the authority section*/
+    rrs = ldns_pkt_authority(p);
+    m_answer->auth = rr::parseLdnsRrList(rrs);
+
+    /*fill the additional section*/
+    rrs = ldns_pkt_additional(p);
+    m_answer->add = rr::parseLdnsRrList(rrs);
 
     ldns_rdf_deep_free(d);
     ldns_pkt_free(p);
