@@ -1,6 +1,9 @@
-all:
-	echo Compiling $(CLION_EXE_DIR)/$@ ...
-	g++ -std=c++11 src/*.cpp -ggdb3 -o $(CLION_EXE_DIR)/roughDNS
+SHELL := /bin/bash
 
-terminal:
-	g++ src/*.cpp -o roughDNS
+all:
+	cd ldns; \
+	./configure --prefix=/home/isa2015/ldns/ --disable-dane-verify; \
+	make; \
+	make install; \
+	cd ..; \
+	g++ -std=c++11 -I/home/isa2015/ldns/include/ src/*.cpp -L/home/isa2015/ldns/lib -lldns -Wl,-rpath=/home/isa2015/ldns/lib -o ./roughDNS

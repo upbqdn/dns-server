@@ -3,6 +3,7 @@
 //
 
 #include <malloc.h>
+#include <stdlib.h>
 #include "rr.h"
 
 rr::rr(){
@@ -14,43 +15,81 @@ rr::rr(std::string name, std::string type, uint32_t ttl, std::string data):
 
 }
 
-std::vector<rr *> rr::parseLdns(ldns_rr_list * ldnsRrs) {
+std::vector<rr *> rr::parseLdnsZoneFile(ldns_zone * z) {
+    std::vector<rr *> rrs;
+
+    rrs = parseLdnsRrList(z->_rrs);
+    rrs.push_back(parseLdnsRr(z->_soa));
+
+    return rrs;
+}
+
+std::vector<rr *> rr::parseLdnsRrList(ldns_rr_list *ldnsRrs) {
     std::vector<rr *> rrs;
 
     for (int i = 0; i < ldnsRrs->_rr_count; i++) {
-        ldns_rr * ldnsRr = ldnsRrs->_rrs[i];
-        rr * r = new rr();
-        char * tmp;
-
-        tmp = ldns_rdf2str(ldnsRr->_owner);
-        r->name = tmp;
-        free(tmp);
-        r->type = ttos(ldnsRr->_rr_type);
-        r->rclass = "IN";
-        r->ttl = ldnsRr->_ttl;
-
-        switch (ldnsRr->_rr_type) {
-            case LDNS_RR_TYPE_A:
-                tmp = ldns_rdf2str(*ldnsRr->_rdata_fields);
-                r->data = tmp;
-                break;
-            case LDNS_RR_TYPE_CNAME:
-            case LDNS_RR_TYPE_NS:
-            case LDNS_RR_TYPE_PTR:
-            case LDNS_RR_TYPE_AAAA:
-                tmp = ldns_rdf2str(*ldnsRr->_rdata_fields);
-                r->data = tmp;
-                break;
-            case LDNS_RR_TYPE_SOA:
-                tmp = ldns_rdf2str(*ldnsRr->_rdata_fields);
-                break;
-        }
-
-        free(tmp);
-        rrs.push_back(r);
+        rrs.push_back(parseLdnsRr(ldnsRrs->_rrs[i]));
     }
 
     return rrs;
+}
+
+rr * rr::parseLdnsRr(ldns_rr * ldnsRr) {
+    rr * r = new rr();
+    char * tmp;
+
+    tmp = ldns_rdf2str(ldnsRr->_owner);
+    r->name = tmp;
+    free(tmp);
+    r->type = ttos(ldnsRr->_rr_type);
+    r->rclass = "IN";
+    r->ttl = ldnsRr->_ttl;
+
+    switch (ldnsRr->_rr_type) {
+        case LDNS_RR_TYPE_MX:
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[1]);
+            r->data = tmp;
+            free(tmp);
+            tmp = ldns_rdf2str(*ldnsRr->_rdata_fields);
+            r->preference = atoi(tmp);
+            free(tmp);
+            break;
+        case LDNS_RR_TYPE_A:
+        case LDNS_RR_TYPE_CNAME:
+        case LDNS_RR_TYPE_NS:
+        case LDNS_RR_TYPE_PTR:
+        case LDNS_RR_TYPE_AAAA:
+            tmp = ldns_rdf2str(*ldnsRr->_rdata_fields);
+            r->data = tmp;
+            free(tmp);
+            break;
+        case LDNS_RR_TYPE_SOA:
+            /*fill all the data fields in the soa rr*/
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[0]);
+            r->mname = tmp;
+            free(tmp);
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[1]);
+            r->rname = tmp;
+            free(tmp);
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[2]);
+            r->serial = atoi(tmp);
+            free(tmp);
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[3]);
+            r->refresh = atoi(tmp);
+            free(tmp);
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[4]);
+            r->retry = atoi(tmp);
+            free(tmp);
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[5]);
+            r->expire = atoi(tmp);
+            free(tmp);
+            tmp = ldns_rdf2str(ldnsRr->_rdata_fields[6]);
+            r->minimum = atoi(tmp);
+            free(tmp);
+            break;
+    }
+
+    return r;
 }
 
 std::string rr::ttos(ldns_rr_type t) {
@@ -71,8 +110,6 @@ std::string rr::ttos(ldns_rr_type t) {
             return "TXT";
         case LDNS_RR_TYPE_AAAA:
             return "AAAA";
-
-        /*todo: finnish the rest*/
     }
 }
 
@@ -126,4 +163,8 @@ uint32_t rr::getMinimum() const {
 
 uint16_t rr::getPreference() const {
     return preference;
+}
+
+void rr::setPreference(uint16_t p) {
+    preference = p;
 }

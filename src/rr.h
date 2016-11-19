@@ -8,6 +8,8 @@
 #include <iostream>
 #include <ldns/ldns.h>
 #include <vector>
+#include <sstream>
+#include <stdlib.h>
 
 class rr {
 private:
@@ -54,7 +56,13 @@ public:
 
     uint16_t getPreference() const;
 
-    static std::vector<rr *> parseLdns(ldns_rr_list *ldnsRrs);
+    void setPreference(uint16_t p);
+
+    static std::vector<rr *> parseLdnsRrList(ldns_rr_list *ldnsRrs);
+
+    static std::vector<rr *> parseLdnsZoneFile(ldns_zone * z);
+
+    static rr * parseLdnsRr(ldns_rr * ldnsRr);
 
     rr(std::string name, std::string type, uint32_t ttl, std::string data);
 

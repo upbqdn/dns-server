@@ -127,6 +127,41 @@ void dnsMsg::insertRR(uint16_t &i, const rr &r, const bool print) {
         tmp32 = sa.sin_addr.s_addr;
         memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
     }
+        /*TYPE MX*/
+    else if (r.getType() == "MX") {
+        if (print) stdOutPrint(MX, r);
+        uint16_t sizePos = i;
+        i+=2;
+
+        tmp16 = htons(r.getPreference());
+        memcpy(&m_obuffer[i], &tmp16, 2); i+=2;
+
+        /*the length of this rdata field is the length of the name +
+         * the length of the preference which is 2*/
+        tmp16 = htons(insertDomainName(i, r.getData()) + 2);
+        memcpy(&m_obuffer[sizePos], &tmp16, 2);
+    }
+        /*TYPE SOA*/
+    else if (r.getType() == "SOA") {
+        if (print) stdOutPrint(SOA, r);
+        uint16_t sizePos = i;
+        i+=2;
+        insertDomainName(i, r.getMname());
+        insertDomainName(i, r.getRname());
+        tmp32 = htonl(r.getSerial());
+        memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
+        tmp32 = htonl(r.getRefresh());
+        memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
+        tmp32 = htonl(r.getRetry());
+        memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
+        tmp32 = htonl(r.getExpire());
+        memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
+        tmp32 = htonl(r.getMinimum());
+        memcpy(&m_obuffer[i], &tmp32, 4); i+=4;
+        tmp16 = htons(i - sizePos - 2);
+        memcpy(&m_obuffer[sizePos], &tmp16, 2);
+
+    }
         /*TYPE AAAA*/
     else if (r.getType() == "AAAA") {
         if (print) stdOutPrint(AAAA, r);

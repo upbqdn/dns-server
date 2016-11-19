@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "main.h"
 
 ArgParser* argParser;
@@ -5,21 +6,6 @@ Server* server;
 
 int main(int argc, char** argv)
 {
-    /*********************************************************************/
-    /*test code*/
-    char *filename;
-    FILE *fp;
-    ldns_zone *z;
-    int line_nr = 0;
-    int c;
-    bool canonicalize = false;
-    bool sort = false;
-    bool strip = false;
-    bool only_dnssec = false;
-    bool print_soa = true;
-    ldns_status s;
-    /*********************************************************************/
-
     signal(SIGINT, sigIntHandler);
 
     argParser = new ArgParser;
@@ -36,14 +22,8 @@ int main(int argc, char** argv)
         return EXIT_SUCCESS;
     }
 
-    /*********************************************************************/
-    /*test code*/
-    fp = fopen(argParser->getZoneFile().c_str(), "r");
-    if (fp)
-        s = ldns_zone_new_frm_fp_l(&z, fp, NULL, 0, LDNS_RR_CLASS_IN, &line_nr);
-    /*********************************************************************/
-
-    server = new Server(argParser->getIP(), argParser->getPort());
+    server = new Server(argParser->getZone(), argParser->getIP(),
+                        argParser->getPort());
 
     try {
         server->listen();
@@ -70,7 +50,7 @@ void destroy() {
 
 void sigIntHandler(int s) {
     destroy();
-    std::cerr << "Bye." << std::endl;
+    std::cerr << "\nBye." << std::endl;
     _exit(EXIT_SUCCESS);
 }
 

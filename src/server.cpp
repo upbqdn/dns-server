@@ -9,14 +9,14 @@
 
 int Server::m_fd;
 
-Server::Server(std::string mitmAddr, uint16_t port) {
-
+Server::Server(std::vector<rr *> z, std::string mitmAddr, uint16_t port) {
     m_buffer.resize(BUFFER_SIZE);
     m_mitmAddr = mitmAddr;
     /*Set the server's properties*/
     memset(&m_serverAddr, 0, sizeof(m_serverAddr));
     m_serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     m_serverAddr.sin_port = htons(port);
+    zone = z;
 }
 
 Server::~Server() {
@@ -89,6 +89,7 @@ void Server::prepareResponse() {
 
 void Server::resolve() {
     const question q = *m_question->q[0];
+
     /*TYPE A*/
     if (q.qtype == "A") {
         if (!m_mitmAddr.empty()) {
@@ -99,6 +100,26 @@ void Server::resolve() {
         } else {
             remoteResolve(q, LDNS_RR_TYPE_A);
         }
+    }
+        /*TYPE MX*/
+    else if (q.qtype == "MX") {
+        if (!m_mitmAddr.empty()) {
+            rr * r = new rr(q.qname, "MX", TTL, "foo.bar." + q.qname);
+            r->setPreference(PREFERENCE);
+            m_answer->ans.push_back(r);
+            m_answer->setAA(true);
+            m_answer->setRcode(dnsMsg::OK);
+        } else {
+
+            remoteResolve(q, LDNS_RR_TYPE_MX);
+        }
+    }
+        /*TYPE SOA*/
+    else if (q.qtype == "SOA") {
+        if (isAuthoritative(q))
+            localResolve(q);
+        else
+            remoteResolve(q, LDNS_RR_TYPE_SOA);
     }
         /*TYPE AAAA*/
     else if (q.qtype == "AAAA") {
@@ -118,6 +139,14 @@ void Server::resolve() {
     }
 }
 
+bool Server::isAuthoritative(question q) {
+
+}
+
+void Server::localResolve(question q) {
+
+}
+
 void Server::remoteResolve(question q, ldns_rr_type t) {
     ldns_resolver *res;
     ldns_rdf *d;
@@ -130,7 +159,7 @@ void Server::remoteResolve(question q, ldns_rr_type t) {
     p = ldns_resolver_query(res, d, t, LDNS_RR_CLASS_IN, LDNS_RD);
     rrs = ldns_pkt_answer(p);
 
-    m_answer->ans = rr::parseLdns(rrs);
+    m_answer->ans = rr::parseLdnsRrList(rrs);
     m_answer->setAA(false);
     m_answer->setRcode(p->_header->_rcode);
 

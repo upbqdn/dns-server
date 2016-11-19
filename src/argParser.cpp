@@ -2,6 +2,7 @@
 // Created by marek on 10/14/16.
 //
 
+#include <stdlib.h>
 #include "argParser.h"
 
 ArgParser::ArgParser() {
@@ -9,7 +10,10 @@ ArgParser::ArgParser() {
 }
 
 ArgParser::~ArgParser() {
-
+    for (std::vector<rr *>::iterator i = m_zoneFile.begin();
+         i < m_zoneFile.end(); i++) {
+        delete *i;
+    }
 }
 
 void ArgParser::parse(int argc, char **argv){
@@ -39,9 +43,24 @@ void ArgParser::parse(int argc, char **argv){
 
     }
 
-    /*parse the zone files' paths*/
+    /*parse the zone files*/
     while (optind < argc) {
-        m_zoneFile = argv[optind++];
+        FILE *fp = NULL;
+        ldns_zone *z;
+        int line_nr = 0;
+        ldns_status s;
+
+        if (NULL == (fp = fopen(argv[optind++], "r")))
+            throw std::invalid_argument("could not open the zone file");
+
+        if (LDNS_STATUS_OK != ldns_zone_new_frm_fp_l(&z, fp, NULL, 0,
+                                                              LDNS_RR_CLASS_IN,
+                                                              &line_nr))
+            throw std::invalid_argument("could not parse the zone file");
+
+        std::vector<rr *> tmp = rr::parseLdnsZoneFile(z);
+        m_zoneFile.insert(m_zoneFile.end(), tmp.begin(), tmp.end());
+        ldns_zone_deep_free(z);
     }
 }
 
@@ -69,6 +88,6 @@ std::string ArgParser::getIP() const {
     return m_ip;
 }
 
-std::string ArgParser::getZoneFile() const {
+std::vector<rr *>ArgParser::getZone() const {
     return m_zoneFile;
 }

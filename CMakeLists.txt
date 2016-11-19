@@ -19,7 +19,6 @@ add_executable(roughDNS ${SOURCE_FILES})
 target_link_libraries( roughDNS  /usr/local/lib/libldns.so )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/")
-find_package(BIND REQUIRED)
 
 include_directories( routhDNS ${BIND_INCLUDE_DIR} )
 target_link_libraries( roughDNS ${BIND_LIBRARY} )
