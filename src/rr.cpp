@@ -59,6 +59,7 @@ rr * rr::parseLdnsRr(ldns_rr * ldnsRr) {
         case LDNS_RR_TYPE_NS:
         case LDNS_RR_TYPE_PTR:
         case LDNS_RR_TYPE_AAAA:
+        case LDNS_RR_TYPE_TXT:
             tmp = ldns_rdf2str(*ldnsRr->_rdata_fields);
             r->data = tmp;
             free(tmp);

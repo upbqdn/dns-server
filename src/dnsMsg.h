@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "rr.h"
+#include <algorithm>
 
 struct header {
     /*https://tools.ietf.org/html/rfc1035*/

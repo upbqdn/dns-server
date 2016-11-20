@@ -211,55 +211,81 @@ void dnsMsg::insertRR(uint16_t &i, const rr &r, const bool print) {
         tmp16 = htons(insertDomainName(i, r.getData()));
         memcpy(&m_obuffer[sizePos], &tmp16, 2);
     }
+        /*TYPE TXT*/
+    else if (r.getType() == "TXT") {
+        if (print) stdOutPrint(TXT, r);
+        std::string data = r.getData();
+
+        /*strip off double quotes*/
+        data.erase(std::remove(data.begin(), data.end(), '\"'), data.end());
+
+        /*insert the size of the string + the first octet which will indicate
+         * the size in the data field*/
+        tmp16 = htons(data.size() + 1);
+        memcpy(&m_obuffer[i], &tmp16, 2); i+=2;
+
+        uint8_t size = data.size();
+        memcpy(&m_obuffer[i], &size, 1); i+=1;
+
+        for (char & c : data) {
+            memcpy(&m_obuffer[i], &c, 1); i+=1;
+        }
+    }
 }
 
 void dnsMsg::stdOutPrint(uint16_t type, rr r) {
+    std::string name = r.getName();
+
+    /*remove the last dot if present*/
+    if (name.back() == '.')
+        name.pop_back();
+
     switch (type) {
         case A:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
                       << ", addr " << r.getData() << std::endl;
             break;
         case CNAME:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
                       << ", cname " << r.getData() << std::endl;
             break;
         case NS:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
                       << ", ns " << r.getData() << std::endl;
             break;
         case PTR:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
-                      << r.getData() << std::endl;
+                      << ", " << r.getData() << std::endl;
             break;
         case SOA:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
                       << ", mname " << r.getMname() << std::endl;
             break;
         case MX:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
                       << ", preference " << r.getPreference()
                       << ", mx " << r.getData() << std::endl;
            break;
         case TXT:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
-                      << ", txt \"" << r.getData() << "\"" << std::endl;
+                      << ", txt " << r.getData() << std::endl;
             break;
         case AAAA:
-            std::cout << "r: " << r.getName()
+            std::cout << "r: " << name
                       << ": type " << r.getType()
                       << ", class " << r.getRclass()
                       << ", addr " << r.getData() << std::endl;
@@ -300,7 +326,7 @@ uint16_t dnsMsg::insertDomainName(uint16_t &i, std::string name) {
         uint8_t l = chunk.length();
         memcpy(&m_obuffer[i], &l, 1); i+=1;
 
-        /*write chunk itself*/
+        /*write the chunk itself*/
         for (char & c : chunk) {
             memcpy(&m_obuffer[i], &c, 1); i += 1;
         }

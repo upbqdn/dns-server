@@ -53,7 +53,6 @@ int Server::serve() {
                       (struct sockaddr *) &clientAddr,
                       &clientAddrlength)) >= 0) {
 
-        /* todo: swap the children and parents */
         if ((p = fork()) > 0) {
             /*parent*/
         } else if (p == 0) {
@@ -139,6 +138,11 @@ void Server::resolve() {
     else if (q.qtype == "PTR") {
         if(!localResolve(q))
             remoteResolve(q, LDNS_RR_TYPE_PTR);
+    }
+        /*TYPE TXT*/
+    else if (q.qtype == "TXT") {
+        if(!localResolve(q))
+            remoteResolve(q, LDNS_RR_TYPE_TXT);
     }
 }
 
