@@ -2,18 +2,15 @@ DESCRIPTION
 
 RoughDNS is a recursive, concurrent DNS server, which supports various resource
 record types and runs over UDP on Unix-like systems. It is written in C++ 
-according to RFC 1035 and it also supports multiple zone files (utilizing
-an open source library - https://www.nlnetlabs.nl/projects/ldns/).
+according to RFC 1035 and RFC 1034 and it also supports multiple zone files
+(utilizing an open source library - https://www.nlnetlabs.nl/projects/ldns/).
 
 Supported resource records: A, AAAA, SOA, MX, NS, TXT, PTR and CNAME.
 
-
 COMPILATION
 
-You can compile the program by running the Makefile by the make utility.
-It will install the library to /home/isa2015/ldns - no sudo is required
-during the installation, but the user has to have access to this directory.
-The library will also be included from the folder mentioned above.
+You can compile the program by the cmake utility, providing you have the ldns
+library installed.
 
 USAGE
 
@@ -33,13 +30,3 @@ the standard port number will be used - 53.
 
 The last optional parameters are the paths to zone files. The resource records
 specified in the zone files must be unique.
-
-
-FILES
-
-src/ - the source code folder
-doc/ - the documentation folder
-ldns/ - the folder with the ldns library
-manual.pdf - the documentation file
-Makefile
-README
