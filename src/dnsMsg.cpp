@@ -464,7 +464,10 @@ const std::string dnsMsg::parseDomainName(uint16_t &i) {
         }
     }
 
-    i++;
+    if(!name.empty())
+        i++;
+    else
+        name += '.';
 
     return name;
 }

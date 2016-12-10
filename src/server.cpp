@@ -8,6 +8,7 @@
 #pragma ide diagnostic ignored "CannotResolve"
 
 int Server::m_fd;
+std::vector<rr *> Server::zone;
 
 Server::Server(std::vector<rr *> z, std::string mitmAddr, uint16_t port) {
     m_buffer.resize(BUFFER_SIZE);
@@ -53,9 +54,9 @@ int Server::serve() {
                       (struct sockaddr *) &clientAddr,
                       &clientAddrlength)) >= 0) {
 
-        if ((p = fork()) > 0) {
+        if ((p = fork()) == 0) {
             /*parent*/
-        } else if (p == 0) {
+        } else if (p > 0) {
             /*child*/
             m_buffer.resize(m_ql);
             prepareResponse();

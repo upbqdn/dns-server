@@ -19,7 +19,7 @@
 #include <iostream>
 #include <resolv.h>
 #include <netdb.h>
-#include <ldns/ldns.h>
+#include <ldns.h>
 #include "rr.h"
 #include "dnsMsg.h"
 
@@ -36,7 +36,7 @@ private:
     std::vector<char> m_buffer;
     dnsMsg* m_question = NULL;
     dnsMsg* m_answer = NULL;
-    std::vector<rr *> zone;
+    static std::vector<rr *> zone;
 
     int serve();
     void prepareResponse();
