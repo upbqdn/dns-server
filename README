@@ -1,6 +1,6 @@
 DESCRIPTION
 
-RoughDNS is a recursive, concurrent DNS server, which supports various resource
+A recursive, concurrent DNS server, which supports various resource
 record types and runs over UDP on Unix-like systems. It is written in C++ 
 according to RFC 1035 and RFC 1034 and it also supports multiple zone files
 (utilizing an open source library - https://www.nlnetlabs.nl/projects/ldns/).
