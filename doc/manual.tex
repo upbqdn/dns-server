@@ -20,7 +20,6 @@
 \usepackage[text={15.2cm, 25cm}, ignorefoot]{geometry}
 
 \begin{document}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % titulní strana
 \input{title.tex}
@@ -42,7 +41,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Overview} 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-RoughDNS is a recursive, concurrent DNS server, which supports various resource record types and runs over UDP on Unix-like systems. It is written in C++ according to RFC 1035~\cite{rfc1035} and it also supports loading of multiple zone files (utilizing an open source library~\cite{ldns}).
+RoughDNS is a recursive, concurrent DNS server that supports various resource
+record types and runs over UDP on Unix-like systems. It is written in C++
+according to RFC 1035~\cite{rfc1035} and it also supports loading of multiple
+zone files by utilizing~\cite{ldns}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Features} \label{sec:features}
@@ -56,7 +58,9 @@ RoughDNS is a recursive, concurrent DNS server, which supports various resource 
 		\begin{verbatim}
 		-m [--mitm] <ip_address>
 		\end{verbatim}
-		Responds to every A and MX query with the given IP address. This parameter simulates the man in the middle attack. Other records are served in the standard way.
+		Responds to every A and MX query with the given IP address. This parameter
+    simulates the man in the middle attack. Other records are served in the
+    standard way.
 	\item 
 		\begin{verbatim}
 		-h [--help]
@@ -66,9 +70,11 @@ RoughDNS is a recursive, concurrent DNS server, which supports various resource 
 		\begin{verbatim}
 		-p [--port] <port number>
 		\end{verbatim}
-		The server will bind its socket with the given port number. If not specified, the standard port number will be used - 53.
+		The server will bind its socket with the given port number. If not
+    specified, the standard port number will be used - 53.
 \end{itemize}
-The last optional parameters are the paths to zone files. The resource records specified in the zone files must be unique.
+The last optional parameters are the paths to zone files. The resource records
+specified in the zone files must be unique.
 
 \subsection{Supported resource record types}
 \begin{center}
@@ -93,29 +99,59 @@ The last optional parameters are the paths to zone files. The resource records s
 
 \subsection{Description of the supported resource records}
 
-The resource records which the server is authoritative for can be loaded from a zone file. The server also supports loading of multiple zone files. In this case, the records in every zone must be unique. The user can specify arbitrary number of the zone files to be loaded by typing the paths as the last parameters on the command line while launching the server.
+The resource records which the server is authoritative for can be loaded from a
+zone file. The server also supports loading of multiple zone files. In this
+case, the records in every zone must be unique. The user can specify arbitrary
+number of the zone files to be loaded by typing the paths as the last parameters
+on the command line while launching the server.
 
-When the server doesn't find any record for the requested domain name, it resolves the client's query recursively and sends back a non-authoritative answer. The server also supports the Authority and Additional sections of a DNS message.
+When the server doesn't find any record for the requested domain name, it
+resolves the client's query recursively and sends back a non-authoritative
+answer. The server also supports the Authority and Additional sections of a DNS
+message.
 
-When the server receives a query or sends a response, it also prints the information to the standard output. Examples are shown in the section~\ref{sec:examples}. If the answer is empty, the server won't print anything but the question.
+When the server receives a query or sends a response, it also prints the
+information to the standard output. Examples are shown in the
+section~\ref{sec:examples}. If the answer is empty, the server won't print
+anything but the question.
 
-If the client is looking for a record which happens to be 'behind' a CNAME record in the zone file, the server will look for every occurence of the actual canonical name and send both the desired record as well as the CNAME record. Recursive CNAME records are also supported. Example~\ref{subsec:ex2} shows this case.
+If the client is looking for a record which happens to be 'behind' a CNAME
+record in the zone file, the server will look for every occurence of the actual
+canonical name and send both the desired record as well as the CNAME record.
+Recursive CNAME records are also supported. Example~\ref{subsec:ex2} shows this
+case.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation} \label{sec:implementation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The server is written in C++ and it makes use of an open source library~\cite{ldns} in order to parse the zone files and to resolve the non-authoritative requests. It is supposed to run on Unix-like systems providing the library has been installed. The server also utilizes Berkeley sockets for UDP communication with clients which is done manually without utilizing any third-party libraries. It supports only the IN class of resource records and only one question per message. 
+The server is written in C++ and it makes use of an open source
+library~\cite{ldns} in order to parse the zone files and to resolve the
+non-authoritative requests. It is supposed to run on Unix-like systems providing
+the library has been installed. The server also utilizes Berkeley sockets for
+UDP communication with clients which is done manually without utilizing any
+third-party libraries. It supports only the IN class of resource records and
+only one question per message.
 
-In order to keep the length of the message under the limited size (512B)~\cite{rfc1035} section 2.3.3, the server supports the compression scheme of domain names introduced in RFC 1035 \cite{rfc1035} section 4.1.4. The compression eliminates the repetition of domain names in a message. In the case that the length of a message exceeds the maximum length, the server will truncate the message and set the truncation bit.
+In order to keep the length of the message under the limited size
+(512B)~\cite{rfc1035} section 2.3.3, the server supports the compression scheme
+of domain names introduced in RFC 1035 \cite{rfc1035} section 4.1.4. The
+compression eliminates the repetition of domain names in a message. In the case
+that the length of a message exceeds the maximum length, the server will
+truncate the message and set the truncation bit.
 
-Since it is a concurrent server, it forks a new process for every new incoming message and processes it separately.
+Since it is a concurrent server, it forks a new process for every new incoming
+message and processes it separately.
 
-The server can be terminated by receiving the SIGINT signal. It has been tested in Valgrind for potential memory leaks and none were present (even in the forked processes).
+The server can be terminated by receiving the SIGINT signal. It has been tested
+in Valgrind for potential memory leaks and none were present (even in the forked
+processes).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples} \label{sec:examples}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Example1:} \label{subsec:ex1}
+
 \begin{verbatim}
 	q: foo: type SOA, class IN
 	r: foo: type SOA, class IN, mname a.root-servers.net.
@@ -133,9 +169,13 @@ The server can be terminated by receiving the SIGINT signal. It has been tested 
 	q: txt.foo: type TXT, class IN
 	r: txt.foo: type TXT, class IN, txt "foobar"
 \end{verbatim}
-In this example we can see the standard output for the supported resource records. There is a SOA, A, MX, AAAA, PTR, NS and a TXT record listed respectively. \texttt{q} stands for a question and \texttt{r} stands for a response.
+In this example we can see the standard output for the supported resource
+records. There is a SOA, A, MX, AAAA, PTR, NS and a TXT record listed
+respectively. \texttt{q} stands for a question and \texttt{r} stands for a
+response.
 
 \subsection{Example2:} \label{subsec:ex2}
+
 \begin{verbatim}
 	q: www.foo.ex: type A, class IN
 	r: www.foo.ex: type CNAME, class IN, cname bar.foo.ex
@@ -143,14 +183,17 @@ In this example we can see the standard output for the supported resource record
 	r: foo.ex: type A, class IN, addr 85.214.123.64
 	r: foo.ex: type A, class IN, addr 85.214.123.63
 \end{verbatim}
-The client is asking for an A record of the \texttt{www.foo.ex} domain name. We can see that there is one CNAME record for this name with the canonical name \texttt{bar.foo.ex} and that there's also another CNAME record for this name as well. After these two CNAME records, there are two A records which satisfy the original request.
+The client is asking for an A record of the \texttt{www.foo.ex} domain name. We
+can see that there is one CNAME record for this name with the canonical name
+\texttt{bar.foo.ex} and that there's also another CNAME record for this name as
+well. After these two CNAME records, there are two A records which satisfy the
+original request.
+
 \newpage
+
 \bibliographystyle{czechiso}
 
 \begin{flushleft}
-	\bibliography{literatura}
+	\bibliography{refs}
 \end{flushleft}
-
-
-
 \end{document}

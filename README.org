@@ -1,0 +1,35 @@
+#+title: Lightweight DNS
+
+A recursive, concurrent DNS server that supports various resource record types
+and runs over UDP on Unix-like systems. It is written in C++ according to
+[[https://www.ietf.org/rfc/rfc1035.txt][RFC-1035]] and [[https://www.ietf.org/rfc/rfc1034.txt][RFC-1034]]. It also supports multiple zone files thanks to [[https://www.nlnetlabs.nl/projects/ldns/)][ldns]].
+
+Supported resource records: A, AAAA, SOA, MX, NS, TXT, PTR and CNAME.
+
+A further description can be found in this [[file:doc/manual.pdf][pdf]]. 
+
+** Compilation
+
+   You can compile the program by the cmake utility, providing you have [[https://www.nlnetlabs.nl/projects/ldns/)][ldns]]
+   installed.
+
+** Usage
+
+   #+begin_src sh
+     ./roughDNS [-m <ip_addr>] [-h] [-p <port#>] [<zonefile1>] [<zonefileX>]
+   #+end_src
+
+   - src_sh[:exports code]{-m [--mitm] <ip_address>} \\
+     Responds to every A and MX query with the given IP address. This parameter
+     simulates the man in the middle attack. Other records are served
+     in the standard way.
+
+   - src_sh[:exports code]{-h [--help]} \\
+     Prints out a simple user manual.
+
+   - src_sh[:exports code]{-p [--port] <port number>} \\
+     The server will bind its socket with the given port number. If not
+     specified, the standard port number 53 will be used.
+
+   The last optional parameters are the paths to zone files. The resource
+   records specified in the zone files must be unique.
